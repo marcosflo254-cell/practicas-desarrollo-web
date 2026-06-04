@@ -1,83 +1,92 @@
 <template>
   <div style="font-family: Arial, sans-serif; max-width: 1100px; margin: 30px auto; padding: 20px; color: #fff;">
-    <h2 style="text-align: center; color: #3498db; font-weight: bold; margin-bottom: 30px;">
-      🛡️ Validación de Formularios Avanzada (Práctica 08)
-    </h2>
-
-    <div v-if="notificacion.visible" :style="{
-      background: notificacion.error ? '#e74c3c' : '#2ecc71',
-      color: '#fff', padding: '15px', borderRadius: '6px', marginBottom: '20px', 
-      textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(0,0,0,0.2)'
-    }">
-      {{ notificacion.mensaje }}
-    </div>
-
-    <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #333;">
-      <h4 style="color: #3498db; margin-top: 0;">{{ editando ? '📝 Editar Registro' : '➕ Registrar Producto Seguro' }}</h4>
+    
+    <div v-if="!autenticado" style="max-width: 400px; margin: 80px auto; background: #1a1a1a; padding: 30px; border-radius: 8px; border: 1px solid #333; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+      <h3 style="text-align: center; color: #9b59b6; margin-top: 0; font-weight: bold; font-size: 24px;">🔐 Iniciar Sesión</h3>
+      <p style="text-align: center; color: #888; font-size: 13px; margin-bottom: 25px;">Práctica 09 - Autenticación por Tokens</p>
       
-      <form @submit.prevent="guardarProducto" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; align-items: start;">
-        
-        <div>
-          <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Nombre (Mín. 3 letras)</label>
-          <input v-model="form.nombre" type="text" style="width:100%; padding:8px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
-          <span v-if="errores.nombre" style="color: #e74c3c; font-size: 11px; display: block; margin-top: 4px;">⚠️ {{ errores.nombre }}</span>
+      <form @submit.prevent="iniciarSesion">
+        <div style="margin-bottom: 15px;">
+          <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Correo Electrónico</label>
+          <input v-model="loginForm.email" type="email" required style="width:100%; padding:10px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
         </div>
-
-        <div>
-          <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Descripción (Mín. 10 letras)</label>
-          <input v-model="form.descripcion" type="text" style="width:100%; padding:8px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
-          <span v-if="errores.descripcion" style="color: #e74c3c; font-size: 11px; display: block; margin-top: 4px;">⚠️ {{ errores.descripcion }}</span>
+        <div style="margin-bottom: 20px;">
+          <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Contraseña</label>
+          <input v-model="loginForm.password" type="password" required style="width:100%; padding:10px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
         </div>
-
-        <div>
-          <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Precio (Mín. $1.00)</label>
-          <input v-model="form.precio" type="number" step="0.01" style="width:100%; padding:8px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
-          <span v-if="errores.precio" style="color: #e74c3c; font-size: 11px; display: block; margin-top: 4px;">⚠️ {{ errores.precio }}</span>
-        </div>
-
-        <div>
-          <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Categoría</label>
-          <select v-model="form.categoria_id" style="width:100%; padding:8px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
-            <option value="1">1 - Electrónica</option>
-            <option value="2">2 - Ropa y Calzado</option>
-            <option value="99">99 - Inexistente (Probar error)</option>
-          </select>
-        </div>
-
-        <div style="align-self: end;">
-          <button type="submit" style="background: #3498db; color:#fff; font-weight:bold; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; width:100%;">
-            {{ editando ? 'Actualizar Datos' : 'Validar e Insertar' }}
-          </button>
-        </div>
+        <button type="submit" style="background: #9b59b6; color:#fff; font-weight:bold; border:none; padding:12px; border-radius:4px; cursor:pointer; width:100%; font-size:15px;">
+          Ingresar al Sistema
+        </button>
       </form>
+      <span v-if="errorLogin" style="color: #e74c3c; font-size: 13px; display: block; text-align: center; margin-top: 15px;">⚠️ {{ errorLogin }}</span>
     </div>
 
-    <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; border: 1px solid #333;">
-      <h4 style="color: #3498db; margin-top: 0;">📋 Registros Validados</h4>
-      <table style="width: 100%; border-collapse: collapse; text-align: left;">
-        <thead>
-          <tr style="border-bottom: 2px solid #333; color: #3498db;">
-            <th style="padding: 10px;">ID</th>
-            <th style="padding: 10px;">Nombre</th>
-            <th style="padding: 10px;">Descripción</th>
-            <th style="padding: 10px;">Precio</th>
-            <th style="padding: 10px;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="prod in productos" :key="prod.id" style="border-bottom: 1px solid #222;">
-            <td style="padding: 10px;">{{ prod.id }}</td>
-            <td style="padding: 10px; font-weight: bold;">{{ prod.nombre }}</td>
-            <td style="padding: 10px; color: #aaa;">{{ prod.descripcion }}</td>
-            <td style="padding: 10px; color: #2ecc71;">${{ prod.precio }}</td>
-            <td style="padding: 10px;">
-              <button style="background: #2ecc71; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 4px; cursor: pointer;" @click="seleccionarEditar(prod)">Editar</button>
-              <button style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;" @click="eliminarProducto(prod.id)">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-else>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 15px;">
+        <h2 style="color: #9b59b6; font-weight: bold; margin: 0;">🛡️ Panel de Inventario Protegido (Práctica 09)</h2>
+        <button @click="cerrarSesion" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+          🚪 Cerrar Sesión
+        </button>
+      </div>
+
+      <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #333;">
+        <h4 style="color: #9b59b6; margin-top: 0;">{{ editando ? '📝 Editar Producto' : '➕ Registrar Producto Seguro' }}</h4>
+        <form @submit.prevent="guardarProducto" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end;">
+          <div>
+            <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Nombre</label>
+            <input v-model="form.nombre" type="text" required style="width:100%; padding:8px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Descripción</label>
+            <input v-model="form.descripcion" type="text" required style="width:100%; padding:8px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Precio</label>
+            <input v-model="form.precio" type="number" step="0.01" required style="width:100%; padding:8px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; color:#aaa; margin-bottom:5px;">Categoría</label>
+            <select v-model="form.categoria_id" required style="width:100%; padding:8px; background:#242424; border:1px solid #444; color:#fff; border-radius:4px;">
+              <option value="1">1 - Electrónica</option>
+              <option value="2">2 - Ropa y Calzado</option>
+            </select>
+          </div>
+          <div>
+            <button type="submit" style="background: #9b59b6; color:#fff; font-weight:bold; border:none; padding:9px 15px; border-radius:4px; cursor:pointer; width:100%;">
+              {{ editando ? 'Actualizar' : 'Guardar' }}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div style="background: #1a1a1a; padding: 20px; border-radius: 8px; border: 1px solid #333;">
+        <h4 style="color: #9b59b6; margin-top: 0;">📋 Inventario de Productos (Peticiones con Token Bearer)</h4>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 2px solid #333; color: #9b59b6;">
+              <th style="padding: 10px;">ID</th>
+              <th style="padding: 10px;">Nombre</th>
+              <th style="padding: 10px;">Descripción</th>
+              <th style="padding: 10px;">Precio</th>
+              <th style="padding: 10px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="prod in productos" :key="prod.id" style="border-bottom: 1px solid #222;">
+              <td style="padding: 10px;">{{ prod.id }}</td>
+              <td style="padding: 10px; font-weight: bold;">{{ prod.nombre }}</td>
+              <td style="padding: 10px; color: #aaa;">{{ prod.descripcion }}</td>
+              <td style="padding: 10px; color: #2ecc71;">${{ prod.precio }}</td>
+              <td style="padding: 10px;">
+                <button style="background: #3498db; color: white; border: none; padding: 5px 10px; margin-right: 5px; border-radius: 4px; cursor: pointer;" @click="seleccionarEditar(prod)">Editar</button>
+                <button style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;" @click="eliminarProducto(prod.id)">Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
   </div>
 </template>
 
@@ -85,78 +94,75 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
+const autenticado = ref(false)
+const token = ref('')
 const productos = ref([])
 const editando = ref(false)
 const idActual = ref(null)
 
+const loginForm = ref({ email: '', password: '' })
 const form = ref({ nombre: '', descripcion: '', precio: '', categoria_id: '1' })
-const errores = ref({ nombre: '', descripcion: '', precio: '' })
-const notificacion = ref({ visible: false, mensaje: '', error: false })
+const errorLogin = ref('')
 
-const mostrarAlerta = (msg, esError = false) => {
-  notificacion.value = { visible: true, mensaje: msg, error: esError }
-  setTimeout(() => { notificacion.value.visible = false }, 4000)
+// Configurar encabezado con token para todas las peticiones
+const configurarAxios = () => {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
 }
 
-const validarFrontend = () => {
-  let valido = true
-  errores.value = { nombre: '', descripcion: '', precio: '' }
-
-  if (!form.value.nombre || form.value.nombre.length < 3) {
-    errores.value.nombre = 'El nombre requiere mínimo 3 caracteres (Frontend).'
-    valido = false
+const iniciarSesion = async () => {
+  errorLogin.value = ''
+  try {
+    const res = await axios.post('http://127.0.0.1:8000/api/login', loginForm.value)
+    token.value = res.data.access_token
+    localStorage.setItem('user_token', token.value)
+    autenticado.value = true
+    configurarAxios()
+    cargarProductos()
+  } catch (error) {
+    // Simulación interactiva local en caso de base de datos vacía
+    if (loginForm.value.email === 'admin@uptex.com' && loginForm.value.password === '123456') {
+      token.value = 'token_simulado_uptex_12345'
+      localStorage.setItem('user_token', token.value)
+      autenticado.value = true
+      cargarProductos()
+    } else {
+      errorLogin.value = 'Usuario o contraseña inválidos. Prueba con admin@uptex.com y 123456'
+    }
   }
-  if (!form.value.descripcion || form.value.descripcion.length < 10) {
-    errores.value.descripcion = 'La descripción requiere mínimo 10 letras (Frontend).'
-    valido = false
-  }
-  if (!form.value.precio || form.value.precio <= 0) {
-    errores.value.precio = 'El precio debe ser un número positivo (Frontend).'
-    valido = false
-  }
-  return valido
 }
 
 const cargarProductos = async () => {
   try {
+    configurarAxios()
     const res = await axios.get('http://127.0.0.1:8000/api/productos')
     productos.value = res.data
   } catch (error) {
     productos.value = [
-      { id: 1, nombre: 'Monitor Gamer', descripcion: 'Monitor curvo 144Hz para desarrollo.', precio: 3500, categoria_id: 1 }
+      { id: 1, nombre: 'Laptop Dell Inspiron', descripcion: 'Core i5 con 16GB RAM para ingeniería.', precio: 14999, categoria_id: 1 }
     ]
   }
 }
 
 const guardarProducto = async () => {
-  if (!validarFrontend()) {
-    mostrarAlerta('Por favor, corrige los errores del formulario.', true)
-    return
-  }
-
   try {
+    configurarAxios()
     if (editando.value) {
-      const res = await axios.put(`http://127.0.0.1:8000/api/productos/${idActual.value}`, form.value)
-      mostrarAlerta(res.data.message || 'Actualizado correctamente')
+      await axios.put(`http://127.0.0.1:8000/api/productos/${idActual.value}`, form.value)
       editando.value = false
     } else {
-      const res = await axios.post('http://127.0.0.1:8000/api/productos', form.value)
-      mostrarAlerta(res.data.message || 'Registrado con éxito')
+      await axios.post('http://127.0.0.1:8000/api/productos', form.value)
     }
     limpiar()
     cargarProductos()
   } catch (error) {
-    if (error.response && error.response.status === 422) {
-      const apiErrors = error.response.data.errors
-      if (apiErrors.nombre) errores.value.nombre = apiErrors.nombre[0]
-      if (apiErrors.descripcion) errores.value.descripcion = apiErrors.descripcion[0]
-      if (apiErrors.precio) errores.value.precio = apiErrors.precio[0]
-      mostrarAlerta('Error de validación del Servidor (Laravel).', true)
+    if (!editando.value) {
+      productos.value.push({ id: productos.value.length + 1, ...form.value })
     } else {
-      mostrarAlerta('Error de conexión con el backend, se simuló localmente.', false)
-      if (!editando.value) productos.value.push({ id: productos.value.length + 1, ...form.value })
-      limpiar()
+      const idx = productos.value.findIndex(p => p.id === idActual.value)
+      if (idx !== -1) productos.value[idx] = { id: idActual.value, ...form.value }
+      editando.value = false
     }
+    limpiar()
   }
 }
 
@@ -167,10 +173,10 @@ const seleccionarEditar = (prod) => {
 }
 
 const eliminarProducto = async (id) => {
-  if (confirm("¿Seguro que deseas eliminar este producto?")) {
+  if (confirm("¿Eliminar este producto?")) {
     try {
+      configurarAxios()
       await axios.delete(`http://127.0.0.1:8000/api/productos/${id}`)
-      mostrarAlerta('Registro borrado con éxito.')
       cargarProductos()
     } catch (error) {
       productos.value = productos.value.filter(p => p.id !== id)
@@ -178,10 +184,20 @@ const eliminarProducto = async (id) => {
   }
 }
 
-const limpiar = () => {
-  form.value = { nombre: '', descripcion: '', precio: '', categoria_id: '1' }
-  errores.value = { nombre: '', descripcion: '', precio: '' }
+const cerrarSesion = () => {
+  localStorage.removeItem('user_token')
+  token.value = ''
+  autenticado.value = false
+  loginForm.value = { email: '', password: '' }
 }
 
-onMounted(() => { cargarProductos() })
+onMounted(() => {
+  const tokenGuardado = localStorage.getItem('user_token')
+  if (tokenGuardado) {
+    token.value = tokenGuardado
+    autenticado.value = true
+    configurarAxios()
+    cargarProductos()
+  }
+})
 </script>
