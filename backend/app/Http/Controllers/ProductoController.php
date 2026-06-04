@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Barryvdh\DomPDF\Facade\Pdf; // Líbreria para PDFs en Laravel
 
 class ProductoController extends Controller {
     
@@ -12,22 +13,12 @@ class ProductoController extends Controller {
         return response()->json(Producto::with('categoria')->get());
     }
 
-    // Registrar con Validación Avanzada
     public function store(Request $request) {
         $validator = Validator::make($request->all(), [
             'nombre' => 'required|string|min:3|max:50',
             'descripcion' => 'required|string|min:10|max:255',
-            'precio' => 'required|numeric|min:1|max:999999',
+            'precio' => 'required|numeric|min:1',
             'categoria_id' => 'required|exists:categorias,id'
-        ], [
-            'nombre.required' => 'El nombre del producto es obligatorio.',
-            'nombre.min' => 'El nombre debe tener al menos 3 caracteres.',
-            'descripcion.required' => 'Debes añadir una descripción detallada.',
-            'descripcion.min' => 'La descripción debe ser de al menos 10 caracteres.',
-            'precio.required' => 'El precio es obligatorio.',
-            'precio.numeric' => 'El precio debe ser un número válido.',
-            'precio.min' => 'El precio mínimo debe ser de $1.00.',
-            'categoria_id.exists' => 'La categoría seleccionada no existe en la base de datos.'
         ]);
 
         if ($validator->fails()) {
@@ -35,39 +26,63 @@ class ProductoController extends Controller {
         }
 
         $producto = Producto::create($request->all());
-        return response()->json(['message' => '¡Producto registrado con éxito!', 'producto' => $producto], 201);
+        return response()->json(['message' => '¡Producto registrado!', 'producto' => $producto], 201);
     }
 
-    // Actualizar con Validación Avanzada
     public function update(Request $request, $id) {
         $producto = Producto::findOrFail($id);
-        
-        $validator = Validator::make($request->all(), [
-            'nombre' => 'required|string|min:3|max:50',
-            'descripcion' => 'required|string|min:10|max:255',
-            'precio' => 'required|numeric|min:1|max:999999',
-            'categoria_id' => 'required|exists:categorias,id'
-        ], [
-            'nombre.required' => 'El nombre no puede quedar vacío.',
-            'nombre.min' => 'El nombre debe tener al menos 3 caracteres.',
-            'descripcion.required' => 'La descripción es obligatoria para actualizar.',
-            'descripcion.min' => 'La descripción debe ser de al menos 10 caracteres.',
-            'precio.required' => 'El precio es requerido.',
-            'precio.numeric' => 'Ingresa un precio numérico válido.',
-            'precio.min' => 'El precio debe ser mayor a $1.00.'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
         $producto->update($request->all());
-        return response()->json(['message' => '¡Producto actualizado correctamente!', 'producto' => $producto]);
+        return response()->json(['message' => '¡Producto actualizado!', 'producto' => $producto]);
     }
 
     public function destroy($id) {
         $producto = Producto::findOrFail($id);
         $producto->delete();
-        return response()->json(['message' => 'Producto eliminado correctamente.']);
+        return response()->json(['message' => 'Producto eliminado.']);
+    }
+
+    // FUNCIÓN NUEVA: Generar Reporte PDF formal
+    public function exportarPDF() {
+        $productos = Producto::with('categoria')->get();
+        
+        // Estructura HTML básica del PDF que se va a descargar
+        $html = '
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h1 style="text-align: center; color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px;">
+                REPORTE OFICIAL DE INVENTARIO
+            </h1>
+            <p style="text-align: right; font-size: 12px; color: #7f8c8d;">Fecha de generación: ' . date('d/m/Y H:i') . '</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #2c3e50; color: white; text-align: left;">
+                        <th style="padding: 10px; border: 1px solid #ddd;">ID</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Producto</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Descripción</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Precio</th>
+                    </tr>
+                </thead>
+                <tbody>';
+                
+        foreach($productos as $p) {
+            $html .= '
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">' . $p->id . '</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">' . $p->nombre . '</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; color: #555;">' . $p->descripcion . '</td>
+                        <td style="padding: 10px; border: 1px solid #ddd; color: #27ae60; font-weight: bold;">$' . $p->precio . '</td>
+                    </tr>';
+        }
+        
+        $html .= '
+                </tbody>
+            </table>
+            <div style="margin-top: 50px; text-align: center; font-size: 11px; color: #95a5a6;">
+                Sistemas Computacionales - Universidad Politécnica de Texcoco
+            </div>
+        </div>';
+
+        $pdf = Pdf::loadHTML($html);
+        return $pdf->download('reporte-inventario.pdf');
     }
 }
