@@ -37,3 +37,9 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+# Laravel overrides
+/vendor
+.env
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
